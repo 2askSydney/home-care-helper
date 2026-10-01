@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Home Care Helper</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f4;--card:#fff;--ink:#1f2a27;--mut:#66736e;--acc:#1f7a6b;--accInk:#fff;--line:#dfe5e1;--warn:#b4232a;--warnBg:#fdeceb;--ok:#e3f3ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13191a;--card:#1c2426;--ink:#e8efec;--mut:#9aa9a3;--acc:#4fc3ae;--accInk:#0b1a17;--line:#2d3a3c;--warn:#ff8a8f;--warnBg:#3a1e20;--ok:#1d3a34}}
+:root[data-theme="dark"]{--bg:#13191a;--card:#1c2426;--ink:#e8efec;--mut:#9aa9a3;--acc:#4fc3ae;--accInk:#0b1a17;--line:#2d3a3c;--warn:#ff8a8f;--warnBg:#3a1e20;--ok:#1d3a34}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 2px}h2{font-size:17px;margin:0 0 10px}
+.sub{color:var(--mut);font-size:14px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+button{font:inherit;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:12px 14px;min-height:48px}
+button.p{background:var(--acc);color:var(--accInk);border-color:var(--acc);font-weight:600;width:100%}
+select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
+.big{font-size:38px;font-weight:700;margin:2px 0}
+.due{color:var(--warn)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tip{font-size:14px;color:var(--mut);margin:8px 0 0}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.item{display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item input[type=checkbox]{width:28px;height:28px;flex:none;accent-color:var(--acc)}
+.item.done span.t{text-decoration:line-through;color:var(--mut)}
+.time{color:var(--mut);font-size:14px;white-space:nowrap}
+.grp{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 2px}
+#alerts{position:sticky;top:env(safe-area-inset-top,0px);z-index:9}
+.alert{background:var(--warnBg);border:2px solid var(--warn);color:var(--ink);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;justify-content:space-between;align-items:center}
+.log div{font-size:15px;padding:4px 0;color:var(--mut)}
+.call{background:var(--warnBg);border-color:var(--warn)}
+.call ul{margin:6px 0 10px;padding-left:20px}
+a.tel{display:block;text-align:center;background:var(--warn);color:#fff;padding:13px;border-radius:12px;text-decoration:none;font-weight:600}
+details summary{cursor:pointer;font-weight:600;min-height:32px}
+label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+</style></head><body><main>
+<div id="alerts"></div>
+<h1>Home Care Helper</h1>
+<p class="sub" id="date"></p>
+
+<div class="card" id="turnCard">
+  <h2>Change position</h2>
+  <div class="sub" id="turnLbl">Last change</div>
+  <div class="big" id="turnBig">--</div>
+  <div class="row" style="margin:8px 0">
+    <span>Change to:</span>
+    <select id="pos"></select>
+  </div>
+  <button class="p" id="turnBtn">✔ Position changed</button>
+  <p class="tip">Use the lift or slide sheet. Never drag. Each time, look at the skin on the tailbone, hips, heels, shoulder blades and elbows. Redness that does not fade in 30 minutes: tell the care team.</p>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between"><h2 style="margin:0">Today's checklist</h2><b id="pct">0%</b></div>
+  <div class="bar"><i id="prog"></i></div>
+  <div id="list"></div>
+  <div class="row" style="margin-top:12px">
+    <input id="newT" placeholder="Add a task" style="flex:1 1 140px">
+    <input id="newH" type="time" value="12:00">
+    <button id="addBtn">Add</button>
+  </div>
+</div>
+
+<div class="card call">
+  <h2>Call the care team right away if</h2>
+  <ul>
+    <li>New or worsening pain, or pain not relieved by his medicines</li>
+    <li>Fever (use the number your team gave you)</li>
+    <li>Trouble breathing, fast breathing, or new cough or chest pain</li>
+    <li>A new swollen, bent, or very painful arm or leg, or pain after a transfer</li>
+    <li>New weakness, numbness, or he is very sleepy or hard to wake</li>
+    <li>Skin that is open, blistered, or dark</li>
+  </ul>
+  <div id="telWrap"></div>
+  <p class="tip">Emergency or severe trouble breathing: call 911.</p>
+</div>
+
+<div class="card">
+<details><summary>Settings</summary>
+  <label>Care team phone number</label><input id="phone" type="tel" placeholder="555-555-5555" style="width:100%">
+  <label>Remind me to change position every</label>
+  <select id="int"><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select>
+  <label>Reminders run between</label>
+  <div class="row"><input type="time" id="ds"><span>and</span><input type="time" id="de"></div>
+  <div class="row" style="margin-top:14px"><button id="notif">Turn on phone notifications</button><button id="test">Test alert</button></div>
+  <p class="tip"><b>Important:</b> alerts only work while this page is open and the screen is on. As a backup, also set a repeating alarm on your phone.</p>
+  <p class="tip">Stretches and exercises should be only the ones his therapist showed you. Do them gently and stop if he has pain. His bones may be fragile.</p>
+  <button id="reset" style="margin-top:10px">Clear today's checklist</button>
+</details></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DEF=[
+["Hygiene","08:00","Mouth care / brush teeth"],
+["Hygiene","08:30","Wash face and hands, moisturize skin"],
+["Breathing","09:00","Deep breathing or spirometer (as taught)"],
+["Stretching","10:00","Gentle stretches (as shown by PT)"],
+["Hygiene","12:30","Mouth care"],
+["Breathing","13:00","Deep breathing or spirometer (as taught)"],
+["Stretching","15:00","Gentle stretches (as shown by PT)"],
+["Breathing","17:00","Deep breathing or spirometer (as taught)"],
+["Hygiene","19:00","Bath or wipe-down, private-area care, full skin check"],
+["Hygiene","20:00","Mouth care before bed"]];
+const POS=["In bed with head of bed raised","In wheelchair","Sitting up on sofa","In bed with head of bed raised and legs on a pillow, left leg as straight as comfortably possible"];
+let S;
+try{S=JSON.parse(localStorage.getItem('hch')||'null')}catch(e){}
+S=Object.assign({phone:'',int:120,ds:'07:00',de:'21:00',last:null,lastPos:-1,log:[],custom:[],done:{},fired:{}},S||{});
+const save=()=>{try{localStorage.setItem('hch',JSON.stringify(S))}catch(e){}};
+const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,'')+'';
+const dk=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const hm=d=>d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const tm=s=>{const[h,m]=s.split(':').map(Number);return h*60+m};
+const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
+const inDay=()=>{const n=nowMin();return n>=tm(S.ds)&&n<=tm(S.de)};
+function items(){return DEF.map((x,i)=>({id:'d'+i,g:x[0],h:x[1],t:x[2]})).concat(S.custom.map(c=>({id:c.id,g:'Added',h:c.h,t:c.t}))).sort((a,b)=>tm(a.h)-tm(b.h))}
+function fmtH(h){const[a,b]=h.split(':').map(Number);return new Date(2000,0,1,a,b).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
+function toast(msg,key){
+  const d=document.createElement('div');d.className='alert';
+  d.innerHTML='<b>'+esc(msg)+'</b><button>OK</button>';
+  d.querySelector('button').onclick=()=>d.remove();
+  $('alerts').appendChild(d);
+  try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.3,.6].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=880;o.connect(g);g.connect(c.destination);g.gain.value=.2;o.start(c.currentTime+t);o.stop(c.currentTime+t+.18)})}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}
+  try{if('Notification' in window&&Notification.permission==='granted')new Notification('Home Care Helper',{body:msg})}catch(e){}
+}
+function renderPos(){
+  const sel=$('pos');sel.innerHTML=POS.map((p,i)=>'<option value="'+i+'">'+p+'</option>').join('');
+  sel.value=(S.lastPos+1)%POS.length;
+}
+function renderLog(){
+  const t=dk();
+  $('log').innerHTML=S.log.filter(l=>l.d===t).slice(-6).reverse().map(l=>'<div>'+esc(l.time)+' · '+esc(POS[l.p])+'</div>').join('');
+}
+function renderList(){
+  const d=S.done[dk()]||{};let html='',last='',n=0,c=0;
+  items().forEach(it=>{
+    n++;if(d[it.id])c++;
+    html+='<div class="item'+(d[it.id]?' done':'')+'"><input type="checkbox" data-id="'+it.id+'"'+(d[it.id]?' checked':'')+'><span class="t" style="flex:1"><b>'+esc(it.g)+'</b><br>'+esc(it.t)+'</span><span class="time">'+fmtH(it.h)+'</span></div>';
+  });
+  $('list').innerHTML=html;
+  const p=n?Math.round(c/n*100):0;$('pct').textContent=p+'%';$('prog').style.width=p+'%';
+  $('list').querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const k=dk();S.done[k]=S.done[k]||{};S.done[k][cb.dataset.id]=cb.checked;
+    Object.keys(S.done).forEach(x=>{if(x!==k)delete S.done[x]});save();renderList()});
+}
+function renderTel(){
+  const p=S.phone.replace(/[^0-9+]/g,'');
+  $('telWrap').innerHTML=p?'<a class="tel" href="tel:'+esc(p)+'">Call care team: '+esc(S.phone)+'</a>':'<p class="tip">Add your care team phone number in Settings.</p>';
+}
+function tick(){
+  const now=Date.now();
+  $('date').textContent=new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})+' · '+hm(new Date());
+  if(!S.last){$('turnLbl').textContent='Tap the button after the first position change';$('turnBig').textContent='--';$('turnBig').className='big'}
+  else{
+    const due=S.last+S.int*60000,left=due-now;
+    if(left>0){const m=Math.ceil(left/60000);$('turnLbl').textContent='Next change due in';$('turnBig').textContent=m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min';$('turnBig').className='big'}
+    else{const m=Math.floor(-left/60000);$('turnLbl').textContent='Change is due';$('turnBig').textContent=m<1?'NOW':m+' min overdue';$('turnBig').className='big due';
+      if(inDay()){const slot=Math.floor((now-due)/300000);const key='t'+S.last+'_'+slot;if(!S.fired[key]){S.fired={};S.fired[key]=1;toast('Time to change his position ('+POS[$('pos').value]+')')}}}
+  }
+  const n=nowMin(),k=dk(),d=S.done[k]||{};
+  items().forEach(it=>{const key=k+it.id;if(!d[it.id]&&tm(it.h)===n&&!S.fired[key]){S.fired[key]=1;toast(it.g+': '+it.t)}});
+}
+$('turnBtn').onclick=()=>{const p=+$('pos').value;S.last=Date.now();S.lastPos=p;S.log.push({d:dk(),time:hm(new Date()),p});S.log=S.log.slice(-60);S.fired={};save();$('alerts').innerHTML='';renderPos();renderLog();tick()};
+$('addBtn').onclick=()=>{const t=$('newT').value.trim();if(!t)return;S.custom.push({id:'c'+Date.now(),t,h:$('newH').value||'12:00'});$('newT').value='';save();renderList()};
+$('phone').oninput=e=>{S.phone=e.target.value;save();renderTel()};
+$('int').onchange=e=>{S.int=+e.target.value;save();tick()};
+$('ds').onchange=e=>{S.ds=e.target.value;save()};$('de').onchange=e=>{S.de=e.target.value;save()};
+$('notif').onclick=()=>{try{Notification.requestPermission().then(r=>toast(r==='granted'?'Notifications are on':'Notifications are blocked in this browser'))}catch(e){toast('Notifications are not supported here')}};
+$('test').onclick=()=>toast('This is a test alert');
+$('reset').onclick=()=>{S.done[dk()]={};save();renderList()};
+$('phone').value=S.phone;$('int').value=S.int;$('ds').value=S.ds;$('de').value=S.de;
+renderPos();renderLog();renderList();renderTel();tick();setInterval(tick,1000);
+</script></body></html>
