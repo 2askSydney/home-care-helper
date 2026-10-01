@@ -36,6 +36,7 @@ select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(-
 .call ul{margin:6px 0 10px;padding-left:20px}
 a.tel{display:block;text-align:center;background:var(--warn);color:#fff;padding:13px;border-radius:12px;text-decoration:none;font-weight:600}
 details summary{cursor:pointer;font-weight:600;min-height:32px}
+button.rm{min-height:40px;min-width:40px;padding:4px;flex:none;color:var(--mut)}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
 </style></head><body><main>
 <div id="alerts"></div>
@@ -51,7 +52,7 @@ label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
     <select id="pos"></select>
   </div>
   <button class="p" id="turnBtn">✔ Position changed</button>
-  <p class="tip">Use the lift or slide sheet. Never drag. Each time, look at the skin on the tailbone, hips, heels, shoulder blades and elbows. Redness that does not fade in 30 minutes: tell the care team.</p>
+  <p class="tip">Use the lift or slide sheet. Never drag. Each time, check the skin on the tailbone, bottom and hips (and heels, shoulder blades and elbows if he was lying down). Redness that does not fade in 30 minutes: tell the care team.</p>
   <div class="log" id="log"></div>
 </div>
 
@@ -101,9 +102,11 @@ const DEF=[
 ["Hygiene","08:30","Wash face and hands, moisturize skin"],
 ["Breathing","09:00","Deep breathing or spirometer (as taught)"],
 ["Stretching","10:00","Gentle stretches (as shown by PT)"],
+["Mobility","11:00","Stand with help (as cleared by PT)"],
 ["Hygiene","12:30","Mouth care"],
 ["Breathing","13:00","Deep breathing or spirometer (as taught)"],
 ["Stretching","15:00","Gentle stretches (as shown by PT)"],
+["Mobility","16:30","Stand with help (as cleared by PT)"],
 ["Breathing","17:00","Deep breathing or spirometer (as taught)"],
 ["Hygiene","19:00","Bath or wipe-down, private-area care, full skin check"],
 ["Hygiene","20:00","Mouth care before bed"]];
@@ -141,10 +144,11 @@ function renderList(){
   const d=S.done[dk()]||{};let html='',last='',n=0,c=0;
   items().forEach(it=>{
     n++;if(d[it.id])c++;
-    html+='<div class="item'+(d[it.id]?' done':'')+'"><input type="checkbox" data-id="'+it.id+'"'+(d[it.id]?' checked':'')+'><span class="t" style="flex:1"><b>'+esc(it.g)+'</b><br>'+esc(it.t)+'</span><span class="time">'+fmtH(it.h)+'</span></div>';
+    html+='<div class="item'+(d[it.id]?' done':'')+'"><input type="checkbox" data-id="'+it.id+'"'+(d[it.id]?' checked':'')+'><span class="t" style="flex:1"><b>'+esc(it.g)+'</b><br>'+esc(it.t)+'</span><span class="time">'+fmtH(it.h)+'</span>'+(it.id[0]==='c'?'<button class="rm" data-rm="'+it.id+'" aria-label="Remove task">✕</button>':'')+'</div>';
   });
   $('list').innerHTML=html;
   const p=n?Math.round(c/n*100):0;$('pct').textContent=p+'%';$('prog').style.width=p+'%';
+  $('list').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{S.custom=S.custom.filter(x=>x.id!==b.dataset.rm);save();renderList()});
   $('list').querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const k=dk();S.done[k]=S.done[k]||{};S.done[k][cb.dataset.id]=cb.checked;
     Object.keys(S.done).forEach(x=>{if(x!==k)delete S.done[x]});save();renderList()});
 }
