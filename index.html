@@ -67,19 +67,7 @@ label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
   </div>
 </div>
 
-<div class="card call">
-  <h2>Call the care team right away if</h2>
-  <ul>
-    <li>New or worsening pain, or pain not relieved by his medicines</li>
-    <li>Fever (use the number your team gave you)</li>
-    <li>Trouble breathing, fast breathing, or new cough or chest pain</li>
-    <li>A new swollen, bent, or very painful arm or leg, or pain after a transfer</li>
-    <li>New weakness, numbness, or he is very sleepy or hard to wake</li>
-    <li>Skin that is open, blistered, or dark</li>
-  </ul>
-  <div id="telWrap"></div>
-  <p class="tip">Emergency or severe trouble breathing: call 911.</p>
-</div>
+<div id="telWrap" style="margin-bottom:14px"></div>
 
 <div class="card">
 <details><summary>Settings</summary>
@@ -154,7 +142,7 @@ function renderList(){
 }
 function renderTel(){
   const p=S.phone.replace(/[^0-9+]/g,'');
-  $('telWrap').innerHTML=p?'<a class="tel" href="tel:'+esc(p)+'">Call care team: '+esc(S.phone)+'</a>':'<p class="tip">Add your care team phone number in Settings.</p>';
+  $('telWrap').innerHTML=p?'<a class="tel" href="tel:'+esc(p)+'">Call care team: '+esc(S.phone)+'</a>':'';
 }
 function tick(){
   const now=Date.now();
