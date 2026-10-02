@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Day</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f4;--card:#fff;--ink:#1f2a27;--mut:#66736e;--acc:#1f7a6b;--accInk:#fff;--line:#dfe5e1;--warn:#b4232a;--warnBg:#fdeceb;--ok:#e3f3ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13191a;--card:#1c2426;--ink:#e8efec;--mut:#9aa9a3;--acc:#4fc3ae;--accInk:#0b1a17;--line:#2d3a3c;--warn:#ff8a8f;--warnBg:#3a1e20;--ok:#1d3a34}}
+:root[data-theme="dark"]{--bg:#13191a;--card:#1c2426;--ink:#e8efec;--mut:#9aa9a3;--acc:#4fc3ae;--accInk:#0b1a17;--line:#2d3a3c;--warn:#ff8a8f;--warnBg:#3a1e20;--ok:#1d3a34}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 2px}h2{font-size:17px;margin:0 0 10px}
+.sub{color:var(--mut);font-size:14px;margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+button{font:inherit;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:12px 14px;min-height:48px}
+button.p{background:var(--acc);color:var(--accInk);border-color:var(--acc);font-weight:600;width:100%}
+select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
+.big{font-size:38px;font-weight:700;margin:2px 0}
+.due{color:var(--warn)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tip{font-size:14px;color:var(--mut);margin:8px 0 0}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.item{display:flex;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.item:first-of-type{border-top:0}
+.item input[type=checkbox]{width:28px;height:28px;flex:none;accent-color:var(--acc)}
+.item.done span.t{text-decoration:line-through;color:var(--mut)}
+.time{color:var(--mut);font-size:14px;white-space:nowrap}
+.grp{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:14px 0 2px}
+#alerts{position:sticky;top:env(safe-area-inset-top,0px);z-index:9}
+.alert{background:var(--warnBg);border:2px solid var(--warn);color:var(--ink);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;gap:10px;justify-content:space-between;align-items:center}
+.log div{font-size:15px;padding:4px 0;color:var(--mut)}
+.call{background:var(--warnBg);border-color:var(--warn)}
+.call ul{margin:6px 0 10px;padding-left:20px}
+a.tel{display:block;text-align:center;background:var(--warn);color:#fff;padding:13px;border-radius:12px;text-decoration:none;font-weight:600}
+details summary{cursor:pointer;font-weight:600;min-height:32px}
+button.rm{min-height:40px;min-width:40px;padding:4px;flex:none;color:var(--mut)}
+button.sm{min-height:40px;padding:6px 12px;font-size:15px}
+.scale{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:6px 0 10px}
+.scale button{min-height:44px;padding:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips button{min-height:40px;padding:6px 12px;font-size:15px;border-radius:20px}
+button.on{background:var(--acc);color:var(--accInk);border-color:var(--acc);font-weight:600}
+.edrow{padding:10px 0;border-top:1px solid var(--line)}
+.edrow:first-child{border-top:0}
+.edrow input[type=text]{flex:1 1 150px}
+.ent{padding:8px 0;border-top:1px solid var(--line);font-size:15px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+.ent small{color:var(--mut)}
+label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+</style></head><body><main>
+<div id="alerts"></div>
+<h1 id="hdr">My Day</h1>
+<p class="sub" id="date"></p>
+
+<div class="card" id="turnCard">
+  <h2>Switch positions</h2>
+  <div class="sub" id="turnLbl">Last change</div>
+  <div class="big" id="turnBig">--</div>
+  <div class="row" style="margin:8px 0">
+    <span>Switch to:</span>
+    <select id="pos"></select>
+  </div>
+  <button class="p" id="turnBtn">✔ I switched</button>
+  <p class="tip">Switching positions every couple of hours protects your skin and keeps you more comfortable. If any spot looks red or hurts, tell your mom or your care team.</p>
+  <div class="row" id="dueBtns" style="margin-top:10px;display:none">
+    <button id="snoozeBtn" class="sm">Snooze 15 min</button>
+    <button id="skipBtn" class="sm">Skip this one</button>
+  </div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card">
+  <div class="row" style="justify-content:space-between"><h2 style="margin:0">Today's checklist</h2><span class="row"><b id="pct">0%</b><button class="sm" id="editBtn">Edit</button></span></div>
+  <div class="bar"><i id="prog"></i></div>
+  <div id="list"></div>
+  <div class="row" style="margin-top:12px">
+    <input id="newT" placeholder="Add a task" style="flex:1 1 140px">
+    <select id="newG" aria-label="Category"></select>
+    <input id="newH" type="time" value="12:00">
+    <button id="addBtn">Add</button>
+  </div>
+  <p class="tip" id="editTip" style="display:none">This is your schedule. Change a time or wording, pick a category, or tap ✕ to remove something. Tap Done when you're finished.</p>
+</div>
+
+<div class="card">
+  <h2>How I'm feeling</h2>
+  <div class="sub" style="margin-bottom:0">Pain right now (0 = none, 10 = worst)</div>
+  <div class="scale" id="scale"></div>
+  <div class="sub" style="margin-bottom:0">Anything else? (tap all that apply)</div>
+  <div class="chips" id="chips"></div>
+  <input id="symNote" placeholder="Note (optional), like what helped or how your day is going" style="width:100%">
+  <button class="p" id="symSave" style="margin-top:10px">Save entry</button>
+  <div id="symToday" style="margin-top:8px"></div>
+  <details style="margin-top:8px"><summary>Earlier days</summary><div id="symOld"></div></details>
+  <button class="sm" id="symCopy" style="margin-top:10px">Copy last 7 days to share with my care team</button>
+  <p class="tip" id="copyMsg"></p>
+</div>
+
+<div id="telWrap" style="margin-bottom:14px"></div>
+
+<div class="card">
+<details><summary>Settings</summary>
+  <label>My name (shows at the top)</label><input id="myName" placeholder="Your name or nickname" style="width:100%">
+  <label>My color</label><select id="theme"></select>
+  <label>Care team phone number</label><input id="phone" type="tel" placeholder="555-555-5555" style="width:100%">
+  <label>Remind me to switch positions every</label>
+  <select id="int"><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select>
+  <label>Reminders run between</label>
+  <div class="row"><input type="time" id="ds"><span>and</span><input type="time" id="de"></div>
+  <div class="row" style="margin-top:14px"><button id="notif">Turn on phone notifications</button><button id="test">Test alert</button></div>
+  <p class="tip"><b>Important:</b> alerts only work while this page is open and the screen is on. As a backup, also set a repeating alarm on your phone.</p>
+  <p class="tip">Only do the stretches and exercises your therapist showed you. Go gently and stop if anything hurts. Your bones may be fragile.</p>
+  <button id="reset" style="margin-top:10px">Clear today's checklist</button>
+</details></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DEF=[
+["Hygiene","08:00","Mouth care / brush teeth"],
+["Hygiene","08:30","Wash face and hands, moisturize skin"],
+["Breathing","09:00","Deep breathing or spirometer (as taught)"],
+["Stretching","10:00","Gentle stretches (as shown by PT)"],
+["Mobility","11:00","Stand with help (as cleared by PT)"],
+["Hygiene","12:30","Mouth care"],
+["Breathing","13:00","Deep breathing or spirometer (as taught)"],
+["Stretching","15:00","Gentle stretches (as shown by PT)"],
+["Mobility","16:30","Stand with help (as cleared by PT)"],
+["Breathing","17:00","Deep breathing or spirometer (as taught)"],
+["Hygiene","19:00","Bath or wipe-down, private-area care, full skin check"],
+["Hygiene","20:00","Mouth care before bed"],
+["My choice","14:30","Something I enjoy (music, a show, gaming, drawing)"],
+["Friends","18:00","Text or video call a friend or family member"],
+["My choice","21:00","Wind down: pick my own thing"]];
+const POS=["In bed with head of bed raised","In wheelchair","Sitting up on sofa","In bed with head of bed raised and legs on a pillow, left leg as straight as comfortably possible"];
+let S;
+try{S=JSON.parse(localStorage.getItem('hch_teen')||'null')}catch(e){}
+S=Object.assign({phone:'',int:120,ds:'07:00',de:'21:00',last:null,lastPos:-1,log:[],custom:[],done:{},fired:{},tasks:null,sym:[],snoozeUntil:0,name:'',theme:'Teal'},S||{});
+if(!Array.isArray(S.tasks)){S.tasks=DEF.map((x,i)=>({id:'d'+i,g:x[0],h:x[1],t:x[2]})).concat((S.custom||[]).map(c=>({id:c.id,g:'Added',h:c.h,t:c.t})));S.custom=[]}
+if(!Array.isArray(S.sym))S.sym=[];
+const THEMES={Teal:'#1f7a6b',Blue:'#2563eb',Purple:'#7c3aed',Orange:'#c2410c'};
+function applyName(){const n=(S.name||'').trim();$('hdr').textContent=n?n+"'s Day":'My Day';document.title=$('hdr').textContent}
+function applyTheme(){const c=THEMES[S.theme]||THEMES.Teal,r=document.documentElement.style;r.setProperty('--acc',c);r.setProperty('--accInk','#fff')}
+let editing=false,selPain=null,selTags=[];
+const save=()=>{try{localStorage.setItem('hch_teen',JSON.stringify(S))}catch(e){}};
+const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,'')+'';
+const dk=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+const hm=d=>d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const tm=s=>{const[h,m]=s.split(':').map(Number);return h*60+m};
+const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
+const inDay=()=>{const n=nowMin();return n>=tm(S.ds)&&n<=tm(S.de)};
+function items(){return S.tasks.slice().sort((a,b)=>tm(a.h)-tm(b.h))}
+function fmtH(h){const[a,b]=h.split(':').map(Number);return new Date(2000,0,1,a,b).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
+function snooze(){S.snoozeUntil=Date.now()+15*60000;S.fired={};save();$('alerts').innerHTML='';tick()}
+function toast(msg,withSnooze){
+  const d=document.createElement('div');d.className='alert';
+  d.innerHTML='<b>'+esc(msg)+'</b><span class="row" style="flex:none;flex-wrap:nowrap">'+(withSnooze?'<button data-sn="1">Snooze</button>':'')+'<button data-ok="1">OK</button></span>';
+  d.querySelector('[data-ok]').onclick=()=>d.remove();
+  const sn=d.querySelector('[data-sn]');if(sn)sn.onclick=snooze;
+  $('alerts').appendChild(d);
+  try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.3,.6].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=880;o.connect(g);g.connect(c.destination);g.gain.value=.2;o.start(c.currentTime+t);o.stop(c.currentTime+t+.18)})}catch(e){}
+  try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}
+  try{if('Notification' in window&&Notification.permission==='granted')new Notification('My Day',{body:msg})}catch(e){}
+}
+function renderPos(){
+  const sel=$('pos');sel.innerHTML=POS.map((p,i)=>'<option value="'+i+'">'+p+'</option>').join('');
+  sel.value=(S.lastPos+1)%POS.length;
+}
+function renderLog(){
+  const t=dk();
+  $('log').innerHTML=S.log.filter(l=>l.d===t).slice(-6).reverse().map(l=>'<div>'+esc(l.time)+' · '+esc(l.p<0?'Switch skipped':POS[l.p])+'</div>').join('');
+}
+function renderList(){
+  const d=S.done[dk()]||{};let html='',n=0,c=0;
+  items().forEach(it=>{
+    n++;if(d[it.id])c++;
+    if(editing){
+      html+='<div class="edrow"><div class="row"><input type="time" data-h="'+it.id+'" value="'+esc(it.h)+'">'+gsel('', it.g,'data-g="'+it.id+'"')+'<input type="text" data-t="'+it.id+'" value="'+esc(it.t)+'" aria-label="Task wording"><button class="rm" data-rm="'+it.id+'" aria-label="Remove task">✕</button></div></div>';
+    }else{
+      html+='<div class="item'+(d[it.id]?' done':'')+'"><input type="checkbox" data-id="'+it.id+'"'+(d[it.id]?' checked':'')+'><span class="t" style="flex:1"><b>'+esc(it.g)+'</b><br>'+esc(it.t)+'</span><span class="time">'+fmtH(it.h)+'</span></div>';
+    }
+  });
+  if(!n)html='<p class="tip">No tasks yet. Add one below.</p>';
+  $('list').innerHTML=html;
+  const p=n?Math.round(c/n*100):0;$('pct').textContent=p+'%';$('prog').style.width=p+'%';
+  $('editBtn').textContent=editing?'Done':'Edit';$('editTip').style.display=editing?'block':'none';
+  $('list').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{if(confirm('Remove this task?')){S.tasks=S.tasks.filter(x=>x.id!==b.dataset.rm);save();renderList()}});
+  $('list').querySelectorAll('[data-h]').forEach(i=>i.onchange=()=>{const t=S.tasks.find(x=>x.id===i.dataset.h);if(t&&i.value){t.h=i.value;save()}});
+  $('list').querySelectorAll('[data-g]').forEach(i=>i.onchange=()=>{const t=S.tasks.find(x=>x.id===i.dataset.g);if(t){t.g=i.value;save()}});
+  $('list').querySelectorAll('[data-t]').forEach(i=>i.onchange=()=>{const t=S.tasks.find(x=>x.id===i.dataset.t);if(t&&i.value.trim()){t.t=i.value.trim();save()}});
+  $('list').querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{const k=dk();S.done[k]=S.done[k]||{};S.done[k][cb.dataset.id]=cb.checked;
+    Object.keys(S.done).forEach(x=>{if(x!==k)delete S.done[x]});save();renderList()});
+}
+const GROUPS=['Hygiene','Breathing','Stretching','Mobility','My choice','Friends','School','Rest','Other'];
+const gsel=(id,val,attr)=>'<select '+attr+' aria-label="Category">'+GROUPS.map(g=>'<option'+(g===val?' selected':'')+'>'+g+'</option>').join('')+'</select>';
+const TAGS=['Nausea','Vomiting','Short of breath','Cough','Fever or chills','Tired','Dizzy','Constipation','Poor appetite','Trouble sleeping','Skin redness or sore','Swelling'];
+function renderSymForm(){
+  $('scale').innerHTML=Array.from({length:11},(_,i)=>'<button data-p="'+i+'" class="'+(selPain===i?'on':'')+'" aria-pressed="'+(selPain===i)+'">'+i+'</button>').join('');
+  $('chips').innerHTML=TAGS.map(t=>'<button data-tag="'+esc(t)+'" class="'+(selTags.includes(t)?'on':'')+'" aria-pressed="'+selTags.includes(t)+'">'+esc(t)+'</button>').join('');
+  $('scale').querySelectorAll('button').forEach(b=>b.onclick=()=>{const v=+b.dataset.p;selPain=selPain===v?null:v;renderSymForm()});
+  $('chips').querySelectorAll('button').forEach(b=>b.onclick=()=>{const t=b.dataset.tag;selTags=selTags.includes(t)?selTags.filter(x=>x!==t):selTags.concat(t);renderSymForm()});
+}
+function symLine(e){const dt=new Date(e.ts);return '<div class="ent"><span><b>'+esc(hm(dt))+'</b>'+(e.pain!=null?' · Pain '+e.pain+'/10':'')+(e.tags.length?'<br>'+esc(e.tags.join(', ')):'')+(e.note?'<br><small>'+esc(e.note)+'</small>':'')+'</span><button class="rm sm" data-del="'+e.ts+'" aria-label="Delete entry">✕</button></div>'}
+function renderSym(){
+  const k=dk(),dayOf=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+  const td=S.sym.filter(e=>dayOf(e.ts)===k).sort((a,b)=>b.ts-a.ts);
+  $('symToday').innerHTML=td.length?'<div class="grp">Today</div>'+td.map(symLine).join(''):'';
+  const old=S.sym.filter(e=>dayOf(e.ts)!==k).sort((a,b)=>b.ts-a.ts);let h='',last='';
+  old.forEach(e=>{const dl=new Date(e.ts).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});if(dl!==last){h+='<div class="grp">'+esc(dl)+'</div>';last=dl}h+=symLine(e)});
+  $('symOld').innerHTML=h||'<p class="tip">Nothing earlier yet.</p>';
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Delete this entry?')){S.sym=S.sym.filter(e=>String(e.ts)!==b.dataset.del);save();renderSym()}});
+}
+function renderTel(){
+  const p=S.phone.replace(/[^0-9+]/g,'');
+  $('telWrap').innerHTML=p?'<a class="tel" href="tel:'+esc(p)+'">Call care team: '+esc(S.phone)+'</a>':'';
+}
+function tick(){
+  const now=Date.now();
+  $('date').textContent=new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})+' · '+hm(new Date());
+  const overdue=!!S.last&&now>S.last+S.int*60000;$('dueBtns').style.display=overdue?'flex':'none';
+  if(!S.last){$('turnLbl').textContent='Tap the button after your first switch';$('turnBig').textContent='--';$('turnBig').className='big'}
+  else{
+    const due=S.last+S.int*60000,left=due-now;
+    if(left>0){const m=Math.ceil(left/60000);$('turnLbl').textContent='Next switch in';$('turnBig').textContent=m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min';$('turnBig').className='big'}
+    else{const m=Math.floor(-left/60000);const sn=now<S.snoozeUntil;$('turnLbl').textContent=sn?'Snoozed until '+hm(new Date(S.snoozeUntil))+' · switch is due':'Time to switch';$('turnBig').textContent=m<1?'NOW':m+' min overdue';$('turnBig').className='big due';
+      if(inDay()&&!sn){const slot=Math.floor((now-due)/300000);const key='t'+S.last+'_'+slot;if(!S.fired[key]){S.fired={};S.fired[key]=1;toast('Time to switch positions ('+POS[$('pos').value]+')',true)}}}
+  }
+  const n=nowMin(),k=dk(),d=S.done[k]||{};
+  items().forEach(it=>{const key=k+it.id;if(!d[it.id]&&tm(it.h)===n&&!S.fired[key]){S.fired[key]=1;toast(it.g+': '+it.t)}});
+}
+$('turnBtn').onclick=()=>{const p=+$('pos').value;S.snoozeUntil=0;S.last=Date.now();S.lastPos=p;S.log.push({d:dk(),time:hm(new Date()),p});S.log=S.log.slice(-60);S.fired={};save();$('alerts').innerHTML='';renderPos();renderLog();tick()};
+$('addBtn').onclick=()=>{const t=$('newT').value.trim();if(!t)return;S.tasks.push({id:'c'+Date.now(),g:$('newG').value,t,h:$('newH').value||'12:00'});$('newT').value='';save();renderList()};
+$('editBtn').onclick=()=>{editing=!editing;renderList()};
+$('snoozeBtn').onclick=snooze;
+$('skipBtn').onclick=()=>{if(!confirm('Skip this switch? It will be noted in the log and the timer will restart.'))return;S.log.push({d:dk(),time:hm(new Date()),p:-1});S.log=S.log.slice(-60);S.last=Date.now();S.snoozeUntil=0;S.fired={};save();$('alerts').innerHTML='';renderLog();tick()};
+$('symSave').onclick=()=>{const note=$('symNote').value.trim();if(selPain==null&&!selTags.length&&!note){$('copyMsg').textContent='Pick a pain number, a symptom, or add a note first.';return}
+  S.sym.push({ts:Date.now(),pain:selPain,tags:selTags.slice(),note});const cut=Date.now()-60*864e5;S.sym=S.sym.filter(e=>e.ts>cut).slice(-400);
+  selPain=null;selTags=[];$('symNote').value='';$('copyMsg').textContent='Saved.';save();renderSymForm();renderSym()};
+$('symCopy').onclick=()=>{const cut=Date.now()-7*864e5,es=S.sym.filter(e=>e.ts>cut).sort((a,b)=>a.ts-b.ts);
+  const txt=es.length?es.map(e=>new Date(e.ts).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+': '+[e.pain!=null?'pain '+e.pain+'/10':'',e.tags.join(', '),e.note].filter(Boolean).join(' | ')).join('\n'):'No entries in the last 7 days.';
+  const ok=()=>$('copyMsg').textContent='Copied. You can paste it into a message or note.';
+  const fb=()=>{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');ok()}catch(e){$('copyMsg').textContent='Could not copy on this device.'}t.remove()};
+  try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(e){fb()}};
+$('myName').oninput=e=>{S.name=e.target.value;save();applyName()};
+$('theme').onchange=e=>{S.theme=e.target.value;save();applyTheme()};
+$('phone').oninput=e=>{S.phone=e.target.value;save();renderTel()};
+$('int').onchange=e=>{S.int=+e.target.value;save();tick()};
+$('ds').onchange=e=>{S.ds=e.target.value;save()};$('de').onchange=e=>{S.de=e.target.value;save()};
+$('notif').onclick=()=>{try{Notification.requestPermission().then(r=>toast(r==='granted'?'Notifications are on':'Notifications are blocked in this browser'))}catch(e){toast('Notifications are not supported here')}};
+$('test').onclick=()=>toast('This is a test alert');
+$('reset').onclick=()=>{S.done[dk()]={};save();renderList()};
+$('myName').value=S.name;$('theme').innerHTML=Object.keys(THEMES).map(k=>'<option>'+k+'</option>').join('');$('theme').value=S.theme;$('phone').value=S.phone;$('int').value=S.int;$('ds').value=S.ds;$('de').value=S.de;
+$('newG').innerHTML=GROUPS.map(g=>'<option'+(g==='My choice'?' selected':'')+'>'+g+'</option>').join('');applyName();applyTheme();renderPos();renderLog();renderList();renderSymForm();renderSym();renderTel();tick();setInterval(tick,1000);
+</script></body></html>
