@@ -37,6 +37,17 @@ select,input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(-
 a.tel{display:block;text-align:center;background:var(--warn);color:#fff;padding:13px;border-radius:12px;text-decoration:none;font-weight:600}
 details summary{cursor:pointer;font-weight:600;min-height:32px}
 button.rm{min-height:40px;min-width:40px;padding:4px;flex:none;color:var(--mut)}
+button.sm{min-height:40px;padding:6px 12px;font-size:15px}
+.scale{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:6px 0 10px}
+.scale button{min-height:44px;padding:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips button{min-height:40px;padding:6px 12px;font-size:15px;border-radius:20px}
+button.on{background:var(--acc);color:var(--accInk);border-color:var(--acc);font-weight:600}
+.edrow{padding:10px 0;border-top:1px solid var(--line)}
+.edrow:first-child{border-top:0}
+.edrow input[type=text]{flex:1 1 150px}
+.ent{padding:8px 0;border-top:1px solid var(--line);font-size:15px;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+.ent small{color:var(--mut)}
 label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
 </style></head><body><main>
 <div id="alerts"></div>
@@ -53,11 +64,15 @@ label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
   </div>
   <button class="p" id="turnBtn">✔ Position changed</button>
   <p class="tip">Use the lift or slide sheet. Never drag. Each time, check the skin on the tailbone, bottom and hips (and heels, shoulder blades and elbows if he was lying down). Redness that does not fade in 30 minutes: tell the care team.</p>
+  <div class="row" id="dueBtns" style="margin-top:10px;display:none">
+    <button id="snoozeBtn" class="sm">Snooze 15 min</button>
+    <button id="skipBtn" class="sm">Skip this change</button>
+  </div>
   <div class="log" id="log"></div>
 </div>
 
 <div class="card">
-  <div class="row" style="justify-content:space-between"><h2 style="margin:0">Today's checklist</h2><b id="pct">0%</b></div>
+  <div class="row" style="justify-content:space-between"><h2 style="margin:0">Today's checklist</h2><span class="row"><b id="pct">0%</b><button class="sm" id="editBtn">Edit</button></span></div>
   <div class="bar"><i id="prog"></i></div>
   <div id="list"></div>
   <div class="row" style="margin-top:12px">
@@ -65,6 +80,21 @@ label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
     <input id="newH" type="time" value="12:00">
     <button id="addBtn">Add</button>
   </div>
+  <p class="tip" id="editTip" style="display:none">Editing: change a time or wording, or tap ✕ to remove a task. Tap Done when finished.</p>
+</div>
+
+<div class="card">
+  <h2>Pain and symptoms</h2>
+  <div class="sub" style="margin-bottom:0">Pain right now (0 = none, 10 = worst)</div>
+  <div class="scale" id="scale"></div>
+  <div class="sub" style="margin-bottom:0">Anything else? (tap all that apply)</div>
+  <div class="chips" id="chips"></div>
+  <input id="symNote" placeholder="Note (optional), like what helped" style="width:100%">
+  <button class="p" id="symSave" style="margin-top:10px">Save entry</button>
+  <div id="symToday" style="margin-top:8px"></div>
+  <details style="margin-top:8px"><summary>Earlier days</summary><div id="symOld"></div></details>
+  <button class="sm" id="symCopy" style="margin-top:10px">Copy last 7 days to share</button>
+  <p class="tip" id="copyMsg"></p>
 </div>
 
 <div id="telWrap" style="margin-bottom:14px"></div>
@@ -101,7 +131,10 @@ const DEF=[
 const POS=["In bed with head of bed raised","In wheelchair","Sitting up on sofa","In bed with head of bed raised and legs on a pillow, left leg as straight as comfortably possible"];
 let S;
 try{S=JSON.parse(localStorage.getItem('hch')||'null')}catch(e){}
-S=Object.assign({phone:'',int:120,ds:'07:00',de:'21:00',last:null,lastPos:-1,log:[],custom:[],done:{},fired:{}},S||{});
+S=Object.assign({phone:'',int:120,ds:'07:00',de:'21:00',last:null,lastPos:-1,log:[],custom:[],done:{},fired:{},tasks:null,sym:[],snoozeUntil:0},S||{});
+if(!Array.isArray(S.tasks)){S.tasks=DEF.map((x,i)=>({id:'d'+i,g:x[0],h:x[1],t:x[2]})).concat((S.custom||[]).map(c=>({id:c.id,g:'Added',h:c.h,t:c.t})));S.custom=[]}
+if(!Array.isArray(S.sym))S.sym=[];
+let editing=false,selPain=null,selTags=[];
 const save=()=>{try{localStorage.setItem('hch',JSON.stringify(S))}catch(e){}};
 const today=()=>new Date().toISOString().slice(0,10).replace(/-/g,'')+'';
 const dk=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
@@ -109,12 +142,14 @@ const hm=d=>d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
 const tm=s=>{const[h,m]=s.split(':').map(Number);return h*60+m};
 const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
 const inDay=()=>{const n=nowMin();return n>=tm(S.ds)&&n<=tm(S.de)};
-function items(){return DEF.map((x,i)=>({id:'d'+i,g:x[0],h:x[1],t:x[2]})).concat(S.custom.map(c=>({id:c.id,g:'Added',h:c.h,t:c.t}))).sort((a,b)=>tm(a.h)-tm(b.h))}
+function items(){return S.tasks.slice().sort((a,b)=>tm(a.h)-tm(b.h))}
 function fmtH(h){const[a,b]=h.split(':').map(Number);return new Date(2000,0,1,a,b).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
-function toast(msg,key){
+function snooze(){S.snoozeUntil=Date.now()+15*60000;S.fired={};save();$('alerts').innerHTML='';tick()}
+function toast(msg,withSnooze){
   const d=document.createElement('div');d.className='alert';
-  d.innerHTML='<b>'+esc(msg)+'</b><button>OK</button>';
-  d.querySelector('button').onclick=()=>d.remove();
+  d.innerHTML='<b>'+esc(msg)+'</b><span class="row" style="flex:none;flex-wrap:nowrap">'+(withSnooze?'<button data-sn="1">Snooze</button>':'')+'<button data-ok="1">OK</button></span>';
+  d.querySelector('[data-ok]').onclick=()=>d.remove();
+  const sn=d.querySelector('[data-sn]');if(sn)sn.onclick=snooze;
   $('alerts').appendChild(d);
   try{const c=new (window.AudioContext||window.webkitAudioContext)();[0,.3,.6].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=880;o.connect(g);g.connect(c.destination);g.gain.value=.2;o.start(c.currentTime+t);o.stop(c.currentTime+t+.18)})}catch(e){}
   try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}
@@ -126,19 +161,44 @@ function renderPos(){
 }
 function renderLog(){
   const t=dk();
-  $('log').innerHTML=S.log.filter(l=>l.d===t).slice(-6).reverse().map(l=>'<div>'+esc(l.time)+' · '+esc(POS[l.p])+'</div>').join('');
+  $('log').innerHTML=S.log.filter(l=>l.d===t).slice(-6).reverse().map(l=>'<div>'+esc(l.time)+' · '+esc(l.p<0?'Change skipped':POS[l.p])+'</div>').join('');
 }
 function renderList(){
-  const d=S.done[dk()]||{};let html='',last='',n=0,c=0;
+  const d=S.done[dk()]||{};let html='',n=0,c=0;
   items().forEach(it=>{
     n++;if(d[it.id])c++;
-    html+='<div class="item'+(d[it.id]?' done':'')+'"><input type="checkbox" data-id="'+it.id+'"'+(d[it.id]?' checked':'')+'><span class="t" style="flex:1"><b>'+esc(it.g)+'</b><br>'+esc(it.t)+'</span><span class="time">'+fmtH(it.h)+'</span>'+(it.id[0]==='c'?'<button class="rm" data-rm="'+it.id+'" aria-label="Remove task">✕</button>':'')+'</div>';
+    if(editing){
+      html+='<div class="edrow"><div class="row"><input type="time" data-h="'+it.id+'" value="'+esc(it.h)+'"><input type="text" data-t="'+it.id+'" value="'+esc(it.t)+'" aria-label="Task wording"><button class="rm" data-rm="'+it.id+'" aria-label="Remove task">✕</button></div></div>';
+    }else{
+      html+='<div class="item'+(d[it.id]?' done':'')+'"><input type="checkbox" data-id="'+it.id+'"'+(d[it.id]?' checked':'')+'><span class="t" style="flex:1"><b>'+esc(it.g)+'</b><br>'+esc(it.t)+'</span><span class="time">'+fmtH(it.h)+'</span></div>';
+    }
   });
+  if(!n)html='<p class="tip">No tasks yet. Add one below.</p>';
   $('list').innerHTML=html;
   const p=n?Math.round(c/n*100):0;$('pct').textContent=p+'%';$('prog').style.width=p+'%';
-  $('list').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{S.custom=S.custom.filter(x=>x.id!==b.dataset.rm);save();renderList()});
-  $('list').querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const k=dk();S.done[k]=S.done[k]||{};S.done[k][cb.dataset.id]=cb.checked;
+  $('editBtn').textContent=editing?'Done':'Edit';$('editTip').style.display=editing?'block':'none';
+  $('list').querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{if(confirm('Remove this task?')){S.tasks=S.tasks.filter(x=>x.id!==b.dataset.rm);save();renderList()}});
+  $('list').querySelectorAll('[data-h]').forEach(i=>i.onchange=()=>{const t=S.tasks.find(x=>x.id===i.dataset.h);if(t&&i.value){t.h=i.value;save()}});
+  $('list').querySelectorAll('[data-t]').forEach(i=>i.onchange=()=>{const t=S.tasks.find(x=>x.id===i.dataset.t);if(t&&i.value.trim()){t.t=i.value.trim();save()}});
+  $('list').querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{const k=dk();S.done[k]=S.done[k]||{};S.done[k][cb.dataset.id]=cb.checked;
     Object.keys(S.done).forEach(x=>{if(x!==k)delete S.done[x]});save();renderList()});
+}
+const TAGS=['Nausea','Vomiting','Short of breath','Cough','Fever or chills','Tired','Dizzy','Constipation','Poor appetite','Trouble sleeping','Skin redness or sore','Swelling'];
+function renderSymForm(){
+  $('scale').innerHTML=Array.from({length:11},(_,i)=>'<button data-p="'+i+'" class="'+(selPain===i?'on':'')+'" aria-pressed="'+(selPain===i)+'">'+i+'</button>').join('');
+  $('chips').innerHTML=TAGS.map(t=>'<button data-tag="'+esc(t)+'" class="'+(selTags.includes(t)?'on':'')+'" aria-pressed="'+selTags.includes(t)+'">'+esc(t)+'</button>').join('');
+  $('scale').querySelectorAll('button').forEach(b=>b.onclick=()=>{const v=+b.dataset.p;selPain=selPain===v?null:v;renderSymForm()});
+  $('chips').querySelectorAll('button').forEach(b=>b.onclick=()=>{const t=b.dataset.tag;selTags=selTags.includes(t)?selTags.filter(x=>x!==t):selTags.concat(t);renderSymForm()});
+}
+function symLine(e){const dt=new Date(e.ts);return '<div class="ent"><span><b>'+esc(hm(dt))+'</b>'+(e.pain!=null?' · Pain '+e.pain+'/10':'')+(e.tags.length?'<br>'+esc(e.tags.join(', ')):'')+(e.note?'<br><small>'+esc(e.note)+'</small>':'')+'</span><button class="rm sm" data-del="'+e.ts+'" aria-label="Delete entry">✕</button></div>'}
+function renderSym(){
+  const k=dk(),dayOf=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
+  const td=S.sym.filter(e=>dayOf(e.ts)===k).sort((a,b)=>b.ts-a.ts);
+  $('symToday').innerHTML=td.length?'<div class="grp">Today</div>'+td.map(symLine).join(''):'';
+  const old=S.sym.filter(e=>dayOf(e.ts)!==k).sort((a,b)=>b.ts-a.ts);let h='',last='';
+  old.forEach(e=>{const dl=new Date(e.ts).toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});if(dl!==last){h+='<div class="grp">'+esc(dl)+'</div>';last=dl}h+=symLine(e)});
+  $('symOld').innerHTML=h||'<p class="tip">Nothing earlier yet.</p>';
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Delete this entry?')){S.sym=S.sym.filter(e=>String(e.ts)!==b.dataset.del);save();renderSym()}});
 }
 function renderTel(){
   const p=S.phone.replace(/[^0-9+]/g,'');
@@ -147,18 +207,30 @@ function renderTel(){
 function tick(){
   const now=Date.now();
   $('date').textContent=new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'})+' · '+hm(new Date());
+  const overdue=!!S.last&&now>S.last+S.int*60000;$('dueBtns').style.display=overdue?'flex':'none';
   if(!S.last){$('turnLbl').textContent='Tap the button after the first position change';$('turnBig').textContent='--';$('turnBig').className='big'}
   else{
     const due=S.last+S.int*60000,left=due-now;
     if(left>0){const m=Math.ceil(left/60000);$('turnLbl').textContent='Next change due in';$('turnBig').textContent=m>=60?Math.floor(m/60)+' h '+(m%60)+' min':m+' min';$('turnBig').className='big'}
-    else{const m=Math.floor(-left/60000);$('turnLbl').textContent='Change is due';$('turnBig').textContent=m<1?'NOW':m+' min overdue';$('turnBig').className='big due';
-      if(inDay()){const slot=Math.floor((now-due)/300000);const key='t'+S.last+'_'+slot;if(!S.fired[key]){S.fired={};S.fired[key]=1;toast('Time to change his position ('+POS[$('pos').value]+')')}}}
+    else{const m=Math.floor(-left/60000);const sn=now<S.snoozeUntil;$('turnLbl').textContent=sn?'Snoozed until '+hm(new Date(S.snoozeUntil))+' · change is due':'Change is due';$('turnBig').textContent=m<1?'NOW':m+' min overdue';$('turnBig').className='big due';
+      if(inDay()&&!sn){const slot=Math.floor((now-due)/300000);const key='t'+S.last+'_'+slot;if(!S.fired[key]){S.fired={};S.fired[key]=1;toast('Time to change his position ('+POS[$('pos').value]+')',true)}}}
   }
   const n=nowMin(),k=dk(),d=S.done[k]||{};
   items().forEach(it=>{const key=k+it.id;if(!d[it.id]&&tm(it.h)===n&&!S.fired[key]){S.fired[key]=1;toast(it.g+': '+it.t)}});
 }
-$('turnBtn').onclick=()=>{const p=+$('pos').value;S.last=Date.now();S.lastPos=p;S.log.push({d:dk(),time:hm(new Date()),p});S.log=S.log.slice(-60);S.fired={};save();$('alerts').innerHTML='';renderPos();renderLog();tick()};
-$('addBtn').onclick=()=>{const t=$('newT').value.trim();if(!t)return;S.custom.push({id:'c'+Date.now(),t,h:$('newH').value||'12:00'});$('newT').value='';save();renderList()};
+$('turnBtn').onclick=()=>{const p=+$('pos').value;S.snoozeUntil=0;S.last=Date.now();S.lastPos=p;S.log.push({d:dk(),time:hm(new Date()),p});S.log=S.log.slice(-60);S.fired={};save();$('alerts').innerHTML='';renderPos();renderLog();tick()};
+$('addBtn').onclick=()=>{const t=$('newT').value.trim();if(!t)return;S.tasks.push({id:'c'+Date.now(),g:'Added',t,h:$('newH').value||'12:00'});$('newT').value='';save();renderList()};
+$('editBtn').onclick=()=>{editing=!editing;renderList()};
+$('snoozeBtn').onclick=snooze;
+$('skipBtn').onclick=()=>{if(!confirm('Skip this position change? It will be noted in the log and the timer will restart.'))return;S.log.push({d:dk(),time:hm(new Date()),p:-1});S.log=S.log.slice(-60);S.last=Date.now();S.snoozeUntil=0;S.fired={};save();$('alerts').innerHTML='';renderLog();tick()};
+$('symSave').onclick=()=>{const note=$('symNote').value.trim();if(selPain==null&&!selTags.length&&!note){$('copyMsg').textContent='Pick a pain number, a symptom, or add a note first.';return}
+  S.sym.push({ts:Date.now(),pain:selPain,tags:selTags.slice(),note});const cut=Date.now()-60*864e5;S.sym=S.sym.filter(e=>e.ts>cut).slice(-400);
+  selPain=null;selTags=[];$('symNote').value='';$('copyMsg').textContent='Saved.';save();renderSymForm();renderSym()};
+$('symCopy').onclick=()=>{const cut=Date.now()-7*864e5,es=S.sym.filter(e=>e.ts>cut).sort((a,b)=>a.ts-b.ts);
+  const txt=es.length?es.map(e=>new Date(e.ts).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+': '+[e.pain!=null?'pain '+e.pain+'/10':'',e.tags.join(', '),e.note].filter(Boolean).join(' | ')).join('\n'):'No entries in the last 7 days.';
+  const ok=()=>$('copyMsg').textContent='Copied. You can paste it into a message or note.';
+  const fb=()=>{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();try{document.execCommand('copy');ok()}catch(e){$('copyMsg').textContent='Could not copy on this device.'}t.remove()};
+  try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(e){fb()}};
 $('phone').oninput=e=>{S.phone=e.target.value;save();renderTel()};
 $('int').onchange=e=>{S.int=+e.target.value;save();tick()};
 $('ds').onchange=e=>{S.ds=e.target.value;save()};$('de').onchange=e=>{S.de=e.target.value;save()};
@@ -166,5 +238,5 @@ $('notif').onclick=()=>{try{Notification.requestPermission().then(r=>toast(r==='
 $('test').onclick=()=>toast('This is a test alert');
 $('reset').onclick=()=>{S.done[dk()]={};save();renderList()};
 $('phone').value=S.phone;$('int').value=S.int;$('ds').value=S.ds;$('de').value=S.de;
-renderPos();renderLog();renderList();renderTel();tick();setInterval(tick,1000);
+renderPos();renderLog();renderList();renderSymForm();renderSym();renderTel();tick();setInterval(tick,1000);
 </script></body></html>
